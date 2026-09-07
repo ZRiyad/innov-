@@ -1,0 +1,23 @@
+1 #include <Wire.h>
+2 #define AS5600_ADDR 0x36
+3 void setup() {
+4 Serial.begin(115200);
+5 Wire.begin();
+6 }
+7 uint16_t readAngle() {
+8 Wire.beginTransmission(AS5600_ADDR);
+9 Wire.write(0x0C);
+2
+10 Wire.endTransmission(false);
+11 Wire.requestFrom(AS5600_ADDR, 2);
+12 uint16_t highByte = Wire.read();
+13 uint16_t lowByte = Wire.read();
+14 return (highByte << 8) | lowByte;
+15 }
+16 void loop() {
+17 uint16_t rawAngle = readAngle();
+18 float angle = rawAngle * 360.0 / 4096.0;
+19 Serial.print("Angle: ");
+20 Serial.println(angle);
+21 delay(50);
+22 }
