@@ -1,1 +1,178 @@
+# AS5600 Angle Reading
 
+## Description
+
+This Arduino program reads the angular position of an **AS5600 magnetic encoder** through the I²C interface and continuously displays the measured angle in degrees on the Serial Monitor.
+
+The encoder provides a 12-bit raw angular value from **0 to 4095**, which is converted to a full rotation range of **0° to 360°**.
+
+---
+
+## Requirements
+
+### Hardware
+
+* Arduino board with I²C support
+* AS5600 magnetic encoder
+* I²C connections between the Arduino and AS5600
+
+### Software
+
+* Arduino IDE
+* `Wire` library
+
+The program uses the standard Arduino `Wire` library for I²C communication.
+
+---
+
+## AS5600 Configuration
+
+The I²C address of the AS5600 is:
+
+```cpp
+#define AS5600_ADDR 0x36
+```
+
+Therefore, the Arduino communicates with the encoder using I²C address **0x36**.
+
+---
+
+## I²C Connections
+
+The program uses:
+
+* **SDA** → Arduino I²C SDA
+* **SCL** → Arduino I²C SCL
+* **VCC** → appropriate power supply
+* **GND** → Arduino GND
+
+The exact Arduino pins depend on the Arduino board being used.
+
+---
+
+## Angle Register
+
+The program reads the AS5600 angle register starting at:
+
+```cpp
+Wire.write(0x0C);
+```
+
+Two bytes are requested from the encoder:
+
+```cpp
+Wire.requestFrom(AS5600_ADDR, 2);
+```
+
+The two bytes are then combined to obtain the raw angle:
+
+```cpp
+return (highByte << 8) | lowByte;
+```
+
+---
+
+## Angle Conversion
+
+The raw encoder value is converted into degrees using:
+
+```cpp
+float angle = rawAngle * 360.0 / 4096.0;
+```
+
+The AS5600 provides a 12-bit angular measurement:
+
+| Raw Value | Approximate Angle |
+| --------: | ----------------: |
+|         0 |                0° |
+|      1024 |               90° |
+|      2048 |              180° |
+|      3072 |              270° |
+|      4095 |            ≈ 360° |
+
+The conversion therefore maps one complete encoder revolution to approximately **360°**.
+
+---
+
+## Program Operation
+
+### Startup
+
+During `setup()`:
+
+1. Serial communication is initialized at **115200 baud**.
+2. I²C communication is initialized using `Wire.begin()`.
+
+The program then continuously reads the encoder angle.
+
+### Measurement Loop
+
+The `loop()` function:
+
+1. Reads the raw encoder value.
+2. Converts the raw value to degrees.
+3. Prints the angle to the Serial Monitor.
+4. Waits 50 ms.
+5. Repeats the process.
+
+The measurement is therefore updated approximately every **50 ms**.
+
+---
+
+## Serial Output
+
+The measured angle is displayed using:
+
+```text
+Angle: XX.XX
+```
+
+For example:
+
+```text
+Angle: 0.00
+Angle: 45.00
+Angle: 90.00
+Angle: 180.00
+```
+
+The displayed value corresponds to the current angular position detected by the AS5600.
+
+---
+
+## Launch Procedure
+
+1. Connect the AS5600 to the Arduino through I²C.
+2. Open the sketch in the Arduino IDE.
+3. Select the correct Arduino board and COM port.
+4. Upload the program.
+5. Open the Serial Monitor.
+6. Set the baud rate to **115200 baud**.
+7. Rotate the magnetic encoder and observe the measured angle.
+
+---
+
+## Expected Behavior
+
+Once the program starts, the Serial Monitor continuously displays the encoder angle.
+
+The angle should change as the magnet/encoder shaft is rotated.
+
+The output is updated approximately every 50 ms:
+
+```text
+Angle: 12.83
+Angle: 13.01
+Angle: 13.18
+...
+```
+
+---
+
+## Important Notes
+
+* The AS5600 must be correctly connected to the Arduino's I²C bus.
+* The encoder I²C address used by this program is `0x36`.
+* The program directly reads the raw angle value and does not apply any additional zero-offset or calibration.
+* The reported angle corresponds to the encoder's raw angular position over one revolution.
+* The Serial Monitor must be configured to **115200 baud** to display the output correctly.
