@@ -1,0 +1,300 @@
+# Eye-GT Testing Tool
+
+## Description
+
+This Python program is a testing and measurement tool for the robotic eye/head system. It controls two Dynamixel motors for **pitch and yaw** and reads orientation data from a **WitMotion IMU**.
+
+The tool provides three main functions:
+
+* **Eye-GT calibration** using infinity-sign movements.
+* **Scenario mode** for moving through user-defined points.
+* **Measurement mode** for recording target, motor, and IMU angles.
+
+Measurement data can optionally be saved to a CSV file.
+
+---
+
+## Requirements
+
+### Hardware
+
+* Two Dynamixel motors
+* WitMotion IMU
+* Dynamixel USB/serial interface
+* Serial connection for the WitMotion IMU
+
+### Software
+
+* Python 3
+* `pyserial`
+
+The program uses the following Python modules:
+
+```text
+serial
+struct
+threading
+time
+csv
+datetime
+```
+
+---
+
+## Communication Configuration
+
+### Dynamixel
+
+| Parameter       |      Value |
+| --------------- | ---------: |
+| Port            |     `COM3` |
+| Baud rate       |  `1000000` |
+| Motor IDs       |    1 and 2 |
+| Center position |        512 |
+| Resolution      | 0.29°/unit |
+
+### WitMotion IMU
+
+| Parameter |    Value |
+| --------- | -------: |
+| Port      |   `COM4` |
+| Baud rate | `115200` |
+
+---
+
+## Motor Configuration
+
+The Dynamixel controller uses:
+
+* **Motor 1 → Yaw**
+* **Motor 2 → Pitch**
+
+The motor positions are converted into angles relative to the center position of 512.
+
+The allowed motor position range is:
+
+```text
+200 to 824
+```
+
+---
+
+## Main Modes
+
+When the program starts, it asks the user to select between:
+
+```text
+(m)easurements
+(s)cenario
+```
+
+### 1. Eye-GT Calibration
+
+The calibration performs two infinity-sign trajectories.
+
+The movement points use:
+
+* Pitch: ±40°
+* Yaw: ±30°
+
+The motors move through the points with a 1-second pause at each position.
+
+The calibration is performed at a user-selected motor speed between **10 and 500**.
+
+Recommended calibration speed:
+
+```text
+250
+```
+
+---
+
+### 2. Scenario Mode
+
+The user can enter a sequence of custom yaw/pitch points.
+
+Example:
+
+```text
+10 20
+30 20
+60 0
+done
+```
+
+The allowed ranges are:
+
+* Yaw: **−90° to +90°**
+* Pitch: **−40° to +40°**
+
+The robot moves through each point and waits **5 seconds** for stabilization.
+
+After completing the scenario, the motors return to the center position `(0°, 0°)`.
+
+---
+
+### 3. Measurement Mode
+
+The user manually enters a yaw and pitch angle.
+
+For every measurement, the program:
+
+1. Reads the initial motor position.
+2. Moves the motors to the target position.
+3. Waits **2 seconds**.
+4. Reads the final motor position.
+5. Reads the IMU Euler angles.
+6. Stores the measurement.
+7. Optionally saves all measurements to a CSV file.
+
+The allowed ranges are:
+
+* Pitch: **−40° to +40°**
+* Yaw: **−90° to +90°**
+
+Pressing `M` stops the measurement session.
+
+---
+
+## Measurement Data
+
+Each measurement contains:
+
+| Parameter      | Description                  |
+| -------------- | ---------------------------- |
+| `ID`           | Measurement number           |
+| `Timestamp`    | Date and time of measurement |
+| `Target_Pitch` | Commanded pitch              |
+| `Target_Yaw`   | Commanded yaw                |
+| `Real_Pitch`   | Pitch reported by the motor  |
+| `Real_Yaw`     | Yaw reported by the motor    |
+| `IMU_Roll`     | Roll measured by the IMU     |
+| `IMU_Pitch`    | Pitch measured by the IMU    |
+| `IMU_Yaw`      | Yaw measured by the IMU      |
+
+---
+
+## Data Saving
+
+At startup, the program asks whether measurement data should be saved.
+
+If enabled, the user enters a filename without the `.csv` extension.
+
+For example:
+
+```text
+eye_test_01
+```
+
+The program creates:
+
+```text
+eye_test_01.csv
+```
+
+The CSV file contains all measurements recorded during the session.
+
+---
+
+## IMU Zero Calibration
+
+Before testing, the program:
+
+1. Moves the motors to `(0°, 0°)`.
+2. Resets the IMU angle reference to zero.
+3. Waits before starting the selected test.
+
+This establishes the initial orientation reference for the IMU.
+
+---
+
+## Motor Speed
+
+Two separate motor speeds can be configured.
+
+### Calibration
+
+Range:
+
+```text
+10–500
+```
+
+Recommended:
+
+```text
+250
+```
+
+### Measurements / Scenario
+
+Range:
+
+```text
+10–500
+```
+
+Recommended:
+
+```text
+100
+```
+
+---
+
+## Launch
+
+Run the program with:
+
+```bash
+python eye_gt_testing.py
+```
+
+or:
+
+```bash
+python3 eye_gt_testing.py
+```
+
+Replace `eye_gt_testing.py` with the actual filename if different.
+
+---
+
+## Program Workflow
+
+```text
+Start
+  ↓
+Connect Dynamixels + IMU
+  ↓
+Move to (0°, 0°)
+  ↓
+Reset IMU reference
+  ↓
+Choose data saving
+  ↓
+Optional Eye-GT calibration
+  ↓
+Set motor speed
+  ↓
+Choose:
+ ├── Measurement mode
+ └── Scenario mode
+  ↓
+Run test
+  ↓
+Return to center
+  ↓
+Disconnect
+```
+
+---
+
+## Important Notes
+
+* The Dynamixel port is configured as `COM3`.
+* The WitMotion IMU port is configured as `COM4`.
+* Pitch and yaw have different allowed ranges.
+* The IMU must provide valid Euler-angle data before testing starts.
+* Measurement data is only written to CSV if saving is enabled and at least one measurement has been recorded.
+* The motors automatically return to `(0°, 0°)` when the test session finishes.
